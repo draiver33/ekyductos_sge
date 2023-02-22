@@ -1,0 +1,127 @@
+FUNCTION MAINoGenRep
+ 17cSql,oCursor,cMsg:="",oFont1,oFont2,cFileDbf
+ 17oReport,nLineas:=0
+  4oGenRep=NIL
+  2.F.
+ 14
+  1CursorWait()
+  1oGenRep:cSqlSelect :="SELECT DOC_CODVEN,DOC_CODSUC,DOC_TIPDOC,DOC_CODIGO,DOC_NUMERO,TDC_CXC,"+ "MIN(DOC_FECHA) AS DOC_FCHREC,SUM(DOC_NETO*DOC_CXC) AS DOC_SALDO,MAX(DOC_RECNUM) AS DOC_RECIBO,MAX(DOC_FECHA) AS DOC_FECHA,"+ "DOC_DCTO,DOC_RECARG,DOC_OTROS,CLI_NOMBRE,DOC_RECNUM,CLI_NOMBRE,DOC_VALCA2,DOC_APLCOM FROM DPDOCCLI"
+  1oGenRep:cSqlInnerJoin:="INNER JOIN DPMOVINV ON DOC_CODSUC=MOV_CODSUC AND DOC_TIPDOC=MOV_TIPDOC AND DOC_CODIGO=MOV_CODCTA "+ " AND DOC_NUMERO=DPMOVINV.MOV_DOCUME INNER JOIN DPVENDEDOR ON DOC_CODVEN=VEN_CODIGO"+ " INNER JOIN DPTIPDOCCLI ON DOC_TIPDOC=TDC_TIPO INNER JOIN DPCLIENTES ON DOC_CODIGO=CLI_CODIGO"
+  1oGenRep:cSqlOrderBy :="GROUP BY DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO "+ "HAVING ABS(DOC_SALDO)<0.5 AND (DOC_FECHA"+Getwhere(">=",RGO_I2)+" AND DOC_FECHA"+GetWhere("<=",RGO_F2)+")"
+  1oGenRep:cWhere :=oGenRep:BuildWhere()
+  1oGenRep:cWhere :=STRTRAN(oGenRep:cWhere,"DPDOCCLI.DOC_FECHA"+Getwhere(">=",RGO_I2)+" AND ","")
+  1oGenRep:cWhere :=oGenRep:cWhere+IF(Empty(oGenRep:cWhere)," WHERE "," AND ")+"DOC_ACT=1 AND DOC_TIPDOC IN ('FAV','DEV','NPE','NCI' ) "
+  1cSql :=oGenRep:BuildSql()
+  4!ChkSql(cSql,@cMsg)
+  1MensajeErr(cMsg,"Reporte <REPORTE>")
+  2.F.
+ 14
+  1MsgRun("Ejecutando Consulta SQL","Por Favor Espere...",{||oCursor:=OpenTable(cSql,.T.) })
+  1oCursor:Replace("EFECTIVA",SPACE(2))
+  1oCursor:Replace("COBEFE",0)
+  1oCursor:Replace("DOC_BANEDI",0)
+  1oCursor:Replace("EFEVTA",0)
+  1oCursor:Replace("COBNEF",0)
+  1oCursor:Replace("NEFVTA",0)
+  1oCursor:Replace("DOC_BASNET",0)
+  1oCursor:Replace("DOC_MTOIVA",0)
+  1oCursor:Replace("DOC_EXONER",0)
+  1oCursor:Replace("DOC_VENTAS",SQLGET("DPDOCCLI","SUM(DOC_NETO*DOC_CXC)","DOC_CODSUC"+GetWhere("=",oCursor:DOC_CODSUC)+ " AND DOC_TIPDOC IN ('FAV','CRE','DEV','DEB') AND DOC_TIPTRA='D' AND DOC_ACT=1"+ IIF(Empty(RGO_I2),""," AND DOC_FECHA"+GetWhere(">=",RGO_I2)+" AND DOC_FECHA"+GetWhere("<=",RGO_F2))))
+  1oCursor:Replace("RATA",0)
+  5 !oCursor:Eof()
+  1EJECUTAR("DPDOCCLIIMP",oCursor:DOC_CODSUC,oCursor:DOC_TIPDOC,oCursor:DOC_CODIGO,oCursor:DOC_NUMERO,.F.,0,oCursor:DOC_RECARG,oCursor:DOC_OTROS)
+  4EMPTY(oDp:aArrayIva)
+  1EJECUTAR("DPDOCCLIIVA",oCursor:DOC_CODSUC,oCursor:DOC_TIPDOC,oCursor:DOC_CODIGO,oCursor:DOC_NUMERO,.F.,0 ,oCursor:DOC_RECARG,oCursor:DOC_OTROS,0)
+ 14
+  1oCursor:REPLACE("DOC_BASNET",(oDp:nBaseNet+oDp:nMontoEx)*IIF(oCursor:TDC_CXC="C",-1,1) )
+  1oCursor:REPLACE("DOC_BANEDI",DIV(oCursor:DOC_BASNET,oCursor:DOC_VALCA2) )
+  1oCursor:REPLACE("DOC_MTOIVA",oDp:nIva*IIF(oCursor:TDC_CXC="C",-1,1) )
+  1oCursor:REPLACE("DOC_EXONER",oDp:nMontoEx*IIF(oCursor:TDC_CXC="C",-1,1) )
+  4(oCursor:DOC_APLCOM)="S"
+  1oCursor:Replace("COBEFE",oCursor:DOC_BASNET)
+  1oCursor:Replace("EFECTIVA","S")
+  7
+  1oCursor:Replace("COBEFE",oCursor:DOC_BASNET)
+  1oCursor:Replace("EFECTIVA","SC")
+ 14
+  1oCursor:DbSkip()
+  6
+  1oCursor:DbSkip(-1)
+  4(oGenRep:oRun:nOut=6 .OR. oGenRep:oRun:nOut=8 .OR. oGenRep:oRun:nOut=9)
+  1cFileDbf:=Alltrim(oRun:oGenRep:REP_CODIGO)+".DBF"
+  4IsDigit(Left(cFileDbf,1))
+  1cFileDbf:="T"+cFileDbf
+ 14
+  1cFileDbf :=oDp:cPathCrp+cFileDbf
+  1oGenRep:oRun:lFileDbf:=.T.
+  1FERASE(cFileDbf)
+  1oCursor:CTODBF(cFileDbf)
+ 14
+  4!oGenRep:OutPut(.T.)
+  2.F.
+ 14
+  1oCursor:=OpenTable(cSql,.T.)
+  4oCursor:RecCount()=0
+  1MensajeErr("No fué posible Encontrar Información","Consulta Vacia Reporte <REPORTE>")
+  1oCursor:End()
+  2.F.
+ 14
+  1oCursor:GoTop()
+  1oFont1 := TFont():New("ARIAL",0,-10,,,,,,,,,,,,,,)
+  1oFont2 := TFont():New("ARIAL",0,-10,,.T.,,,,,,,,,,,,)
+  1oReport := DpRptBegin({{||"Pagos de Documentos de CxC por Cliente"},{||"Fecha: "+dtoc(Date())+" Hora: "+TIME()}},{},{{||"Página: "+str(oReport:nPage,3)+" Registros: "+alltrim(str(nLineas,5))}},{oFont1,oFont2},{},.F.,,,,.T.,,,"Pagos de Documentos de CxC por Cliente",,,UPPER("CENTER") )
+  1oGenRep:SetDevice(oReport)
+  1DpRptAddColumn({{||"Número"},{||"Recibo"}},,{{||oCursor:DOC_RECNUM}},8,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Fecha"},{||"Pago"}},,{{||oCursor:DOC_FECHA}},8,{"99/99/9999"},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Tipo"},{||"Doc."}},,{{||oCursor:DOC_TIPDOC}},4,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Número"},{||"Documento"}},,{{||oCursor:DOC_NUMERO}},10,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Descripción"}},,{{||oCursor:TDC_DESCRI}},35,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Monto del"},{||"Pago"}},,{{||oCursor:DOC_NETO*oCursor:DOC_CXC*-1}},14,{"9,999,999,999,999.99"},{||2},.T.,,UPPER("RIGHT"),.F.,.F.,)
+  1DpRptAddGroup({||oCursor:CLI_CODIGO},{||GROUP01()},{||ENDGRP01()},{||2},.F. )
+  1DpRptEnd()
+  1oReport:bSkip:={||oCursor:DbSkip()}
+  1oReport:Activate(,{||!oCursor:Eof()},,,{||RepBitmap()},,{|oGrp|oReport:NewLine()},,,,{||ONCHANGE()},,,)
+  1oGenRep:OutPut(.F.)
+  1oFont1:End()
+  1oFont2:End()
+  2NIL
+FUNCTION ONCHANGE
+  1nLineas:=nLineas+1
+  2.T.
+FUNCTION PRINTMEMOcMemo,nCol,lData,nIni
+ 17nFor,aLines
+  4Empty(cMemo)
+  2""
+ 14
+  1nIni := If(nIni == nil,1,nIni )
+  1cMemo :=STRTRAN(cMemo,CHR(10),"")
+  1aLines:=_VECTOR(cMemo,CHR(13))
+  4lData
+  2aLines[1]
+ 14
+ 10nFor := nIni TO LEN(aLines)
+  1oReport:StartLine()
+  1oReport:Say(nCol,aLines[nFor])
+  1oReport:EndLine()
+ 11
+  1oReport:Newline()
+  2""
+FUNCTION REPBITMAP
+  1oDp:cLogoBmp := If(oDp:cLogoBmp == nil,"BITMAPS\LOGO.BMP",oDp:cLogoBmp )
+  1oReport:SayBitmap(.3,.3,oDp:cLogoBmp,.5,.5)
+  2NIL
+FUNCTION GROUP01
+ 17cExp:="",uValue:=""
+  1cExp :="Código: "
+  1uValue:=oCursor:CLI_CODIGO
+  1uValue:=cValtoChar(uValue)+" "+cValToChar(oCursor:CLI_NOMBRE)
+  2cExp+uValue
+FUNCTION ENDGRP01
+ 17cExp:="",uValue:="",cLines:=""
+  1cExp :="Total Código:  "
+  1uValue:=oReport:aGroups[1]:cValue
+  1uValue:=uValue
+  1uValue:=cValtoChar(uValue)
+  1cLines:=ltrim(str(oReport:aGroups[1]:nCounter))
+  1cLines:=" ("+cLines+")"
+  2cExp+uValue+cLines

@@ -1,0 +1,199 @@
+// Programa   : GRIDSELINVPOS	
+// Fecha/Hora : 05/11/2005 09:12:14
+// Propósito  : Seleccionar Productos
+// Creado Por : Juan Navas
+// Llamado por: DPPOSSELGRU
+// Aplicación : Ventas
+// Tabla      : DPGRU/DPMARCAS
+
+#INCLUDE "DPXBASE.CH"
+
+PROCE MAIN(cWhere,cGrupo,cTitle,lExiste)
+  LOCAL oBrw,oDlg,aBancos:={},oFontBrw,oCol,oFontB,oBtn,oBrush,cFileBmp,cCodigo
+  LOCAL nTop:=180,nLeft:=235,nWidth:=605,nHeight:=358,I
+  LOCAL nClrPane1:=16774636
+  LOCAL lSelect:=.F.,cBanco:="",aData,nBtnAlto:=25
+  LOCAL cField :="MOV_LOGICO"
+  LOCAL cCol01,cCol02,cCol03,cCol04,cCol05
+  DEFAULT cGrupo :=STRZERO(1,6),;
+          cWhere :="WHERE INV_GRUPO"+GetWhere("=",cGrupo)+"  ",;
+          cTitle :="PRODUCTOS POR GRUPO",;
+          lExiste:=.F.
+
+  IF lExiste
+
+    cWhere:=cWhere+ IIF(Empty(cWhere)," WHERE "," AND ")+ " "+cField+"<>0 "
+
+    aData:=ASQL(" SELECT INV_CODIGO,INV_DESCRI,PRE_PRECIO,PRE_DESCUE,SUM(MOV_CANTID*"+cField+") AS EXISTE FROM DPINV "+;
+                " INNER JOIN DPMOVINV ON MOV_CODIGO=INV_CODIGO "+;               
+                +cWhere+;
+                " GROUP BY INV_CODIGO,INV_DESCRI "+;
+                " HAVING SUM(MOV_CANTID*"+cField+")>0")
+
+  ELSE
+
+    aData:=ASQL("SELECT INV_CODIGO,INV_DESCRI,PRE_PRECIO,"+;
+                " IF(PRE_DESCUE=0,null,PRE_PRECIO-PRE_PRECIO*(PRE_DESCUE/100)),"+;
+		    " PRE_DESCUE FROM DPINV "+;
+                " INNER JOIN DPPRECIOS ON PRE_CODIGO=INV_CODIGO "+;
+		    +cWhere+;
+		    " ")
+
+  ENDIF
+
+  IF Empty(aData)
+    RETURN NIL
+  ENDIF
+
+//AEVAL(aData,{|a,n|aData[n,1]:=a[1]+CRLF+a[3]})
+
+  DEFINE FONT oFontBrw NAME "MS Sans Serif" SIZE 0, -12 BOLD
+  DEFINE FONT oFontB   NAME "MS Sans Serif" SIZE 0, -10 BOLD
+
+//  DEFINE DIALOG oDlg TITLE "Grupos de Productos";
+//         COLOR NIL,oDp:nGris
+
+  DEFINE BRUSH oBrush;
+               FILE "BITMAPS\posselproductos1.bmp"
+
+  DEFINE DIALOG oDlg TITLE "Recibido";
+         STYLE nOr( WS_POPUP, WS_VISIBLE );
+         BRUSH oBrush
+
+  @ 2.3,1 STSAY cTitle;
+          SIZE 190,10;
+          COLORS CLR_HRED FONT oFontB
+
+  oDlg:lHelpIcon:=.F.
+
+  oBrw:=TXBrowse():New(oDlg )
+  oBrw:SetArray( aData ,.T.)
+  oBrw:lHScroll  := .F.
+  oBrw:lVScroll  := .T.
+  oBrw:nFreeze   := 1
+  oBrw:oFont     := oFontBrw
+  oBrw:nDataLines:= 1
+  oBrw:lFooter   := .F.
+  oBrw:lHeader   := .T.
+
+  oCol:=oBrw:aCols[1]
+  oCol:cHeader:="Código"
+  oCol:nWidth :=75
+
+  IF lExiste
+
+
+   oCol:=oBrw:aCols[2]
+   oCol:cHeader:="Descripción"
+   oCol:nWidth :=311-80
+
+   oCol:=oBrw:aCols[3]   
+   oCol:cHeader      :="Disponible"
+   oCol:nWidth       :=80
+   oCol:nDataStrAlign:= AL_RIGHT
+   oCol:nHeadStrAlign:= AL_RIGHT
+   oCol:nFootStrAlign:= AL_RIGHT
+   oCol:bStrData     :={|nMonto|nMonto:=oBrw:aArrayData[oBrw:nArrayAt,3],;
+                                TRAN(nMonto,oDp:cPictCanUnd )}
+
+ ELSE
+
+   oCol:=oBrw:aCols[2]
+   oCol:cHeader:="Descripción"
+   oCol:nWidth :=275
+
+   oCol:=oBrw:aCols[3]
+   oCol:cHeader:="Precio Full"
+   oCol:nDataStrAlign:= AL_RIGHT
+   oCol:nHeadStrAlign:= AL_RIGHT
+   oCol:nFootStrAlign:= AL_RIGHT 
+   oCol:nWidth :=75 
+   oCol:bStrData     :={|nMonto|nMonto:=oBrw:aArrayData[oBrw:nArrayAt,3],;
+                                TRAN(nMonto,"999,999,999.99" )}
+   oCol:=oBrw:aCols[4]
+   oCol:cHeader:="Precio Desc"
+   oCol:nDataStrAlign:= AL_RIGHT
+   oCol:nHeadStrAlign:= AL_RIGHT
+   oCol:nFootStrAlign:= AL_RIGHT
+   oCol:nWidth :=75
+   oCol:bStrData     :={|nMonto|nMonto:=oBrw:aArrayData[oBrw:nArrayAt,4],;
+                                TRAN(nMonto,"999,999,999.99" )}
+   oCol:=oBrw:aCols[5]
+   oCol:cHeader:="% Desc"
+   oCol:nDataStrAlign:= AL_RIGHT
+   oCol:nHeadStrAlign:= AL_RIGHT
+   oCol:nFootStrAlign:= AL_RIGHT
+   oCol:nWidth :=47
+   oCol:bStrData     :={|nMonto|nMonto:=oBrw:aArrayData[oBrw:nArrayAt,5],;
+                                TRAN(nMonto,"99" )+"%"}
+ENDIF
+  oBrw:bClrStd      := {||{7950848, iif( oBrw:nArrayAt%2=0,16770764,16774636 ) } }
+  oBrw:bClrHeader   := {||{CLR_BLUE,16764315}}
+  oBrw:bLDblClick   := {||lSelect:=.T.,oDlg:End()}
+  oBrw:bKeyDown     := {|nKey| oBrw:nLastKey:=nKey,;
+                               IIF( nKey=13,oDlg:End(),NIL) }
+
+  oBrw:CreateFromCode()
+
+   @ 06, 192 SBUTTON oBtn PIXEL;
+            SIZE nBtnAlto,nBtnAlto FONT oFontB;
+            NOBORDER;
+            FILE "BITMAPS\BOTONUP.BMP";
+            COLORS CLR_BLACK, { CLR_WHITE, CLR_HGRAY, 1 };
+            ACTION oBrw:GoUp()
+
+    oBtn:cToolTip:="Subir"
+
+   @ 06, 217 SBUTTON oBtn PIXEL;
+            SIZE nBtnAlto,nBtnAlto FONT oFontB;
+            NOBORDER;
+            FILE "BITMAPS\BOTONDOWN.BMP";
+            COLORS CLR_BLACK, { CLR_WHITE, CLR_HGRAY, 1 };
+            ACTION oBrw:GoDown()
+
+   oBtn:cToolTip:="Bajar"
+
+
+   @ 06, 242  SBUTTON oBtn PIXEL;
+             SIZE nBtnAlto,nBtnAlto FONT oFontB;
+             FILE "BITMAPS\XFIND.BMP";
+             NOBORDER;
+             COLORS CLR_BLACK, { CLR_WHITE, CLR_HGRAY, 1 };
+             ACTION EJECUTAR("BRWSETFIND",oBrw)
+
+
+   oBtn:cToolTip:="Buscar"
+
+
+   @ 06, 268  SBUTTON oBtn PIXEL;
+             SIZE nBtnAlto,nBtnAlto FONT oFontB;
+             FILE "BITMAPS\XSALIR.BMP";
+             NOBORDER;
+             COLORS CLR_BLACK, { CLR_WHITE, CLR_HGRAY, 1 };
+             ACTION oDlg:End()
+
+   oBtn:cToolTip:="Salir"
+
+
+   ACTIVATE DIALOG oDlg ON INIT (oDlg:Move(nTop,nLeft,nWidth,nHeight,.T.),;
+                                 oBrw:Move(20+(nBtnAlto*2),05,nWidth-10,nHeight-084,.T.),;
+                                 oBrw:SetColor(NIL,nClrPane1))
+ 
+
+   oCol:=oBrw:aCols[2]
+   oCol:End()
+
+   IF lSelect .OR. oBrw:nLastKey=13
+     cCodigo:=oBrw:aArrayData[oBrw:nArrayAt,1]
+	ELSE
+//	oPos:lPda=.T.
+   ENDIF
+//? oVisor:lVisor
+
+   IF EMPTY(cCodigo)
+	RETURN SPACE(20)
+   ELSE
+	RETURN oVisor:cCodInv:=cCodigo
+   ENDIF
+
+// EOF

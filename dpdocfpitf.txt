@@ -1,0 +1,42 @@
+[ID]
+ NUMERO=9906
+ NOMBRE=DPDOCFPITF
+ DESCRIPCION=Formas de Pago IGTF                     
+ CONFIG=F
+ SINGUL=Forma de Pago IGTF            
+ APLICA=03
+ PRIMARY_KEY=''
+[END_ID]
+
+[FIELDS]
+ C001=DFI_CODSUC          ,'C',006,0,'','Sucursal',0
+ C002=DFI_TIPDOC          ,'C',003,0,'','Tipo de Documento',0
+ C003=DFI_CODIGO          ,'C',010,0,'','Codigo Cliente',0
+ C004=DFI_NUMERO          ,'C',010,0,'','Numero de Documento',0
+ C005=DFI_CAJBCO          ,'L',001,0,'','Caja o Banco',0
+ C006=DFI_TIPO            ,'C',004,0,'','Tipo de Instrumento',0
+ C007=DFI_MONTO           ,'N',014,2,'','Monto',0
+ C008=DFI_DI              ,'N',012,2,'','Monto DI',0
+ C009=DFI_CODMON          ,'C',003,0,'','Moneda',0
+ C010=DFI_TIPTRA          ,'C',001,0,'','Tipo de Transaccion',0
+ C011=DFI_ITEM            ,'C',003,0,'','Item',1
+ C012=DFI_DOCORG          ,'C',003,0,'','Documento Origen',0
+[END_FIELDS]
+
+[INNER_JOIN]
+[END_INNER_JOIN]
+
+[OPTIONS]
+[END_OPTIONS]
+
+[COMENTARIOS]
+ C: CHAR 
+ D: DATE 
+ L: LOGICAL 1=T 0=F 
+ N: NUMERICO
+ M: MEMO
+
+[SQL]
+ SELECT <CAMPOS> FROM <TABLA> 
+ INNER JOIN XTABLA ON XCAMPO=YCAMPO 
+[ENDSQL]

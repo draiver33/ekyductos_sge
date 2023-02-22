@@ -1,0 +1,640 @@
+// Programa   : DPDOCFPITF
+// Fecha/Hora : 26/01/2005 23:10:42
+// Propósito  : IGTF CxC/cxP
+// Creado Por : Juan Navas
+// Llamado por: Compras y Cuentas por Pagar
+// Aplicación : Compras y Cuentas por Pagar
+// Tabla      : DPDOCPROGAS
+
+#INCLUDE "DPXBASE.CH"
+
+PROCE MAIN(cCodSuc,cTipDoc,cCodPro,cNumDoc,cNomDoc,cDocOrg,cTipITF,nPorITF)
+  LOCAL I,aData:={},oFont,oGrid,oCol,cSql,oFontB,cTitle:="Formas de Pago  para IGTF"
+  LOCAL cWhere,oTable,nNeto:=0,nValCam:=0
+  LOCAL aMetodos:={},cTable
+
+  //ATABLE("SELECT CONCAT(ICJ_CODIGO,'-',ICJ_NOMBRE) FROM DPCAJAINST WHERE ICJ_ACTIVO=1 AND ICJ_INGRES=1 "+;
+          " UNION ALL SELECT CONCAT(TDB_CODIGO,'-',TDB_NOMBRE) FROM DPBANCOTIP WHERE TDB_ACTIVO=1 AND TDB_INGRES=1 AND TDB_SIGNO=1")
+
+
+  DEFAULT cCodSuc:=STRZERO(1,6),;
+          cTipDoc:="FAC",;
+          cCodPro:="J000445010",;
+          cNumDoc:="445",;
+          cNomDoc:=" Factura",;
+          cDocOrg:="V",;
+          cTipITF:="ITF",;
+          nPorITF:=3
+
+  cWhere:="DOC_CODSUC"+GetWhere("=",cCodSuc)+" AND "+;
+          "DOC_TIPDOC"+GetWhere("=",cTipDoc)+" AND "+;
+          "DOC_CODIGO"+GetWhere("=",cCodPro)+" AND "+;
+          "DOC_NUMERO"+GetWhere("=",cNumDoc)+" AND "+;
+          "DOC_TIPTRA='D'"
+
+
+ 
+  //VIEWARRAY(ODP:AFORMAS)
+
+   //?ctipitf,nporitf
+
+  cTable:=IIF(cDocOrg="V","DPDOCCLI","DPDOCPRO")  
+  //nNeto:=MYSQLGET("DPDOCCLI","DOC_DI",cWhere)
+  //nValCa2:=MYSQLGET("DPDOCCLI","DOC_VALCA2",cWhere)
+  // Font Para el Browse
+  DEFINE FONT oFontB NAME "Times New Roman"   SIZE 0, -12 BOLD
+  DEFINE FONT oFont  NAME "Times New Roman"   SIZE 0, -12
+
+  IF cTable="DPDOCCLI"
+   oTable:=OpenTable("SELECT CLI_NOMBRE FROM DPCLIENTES WHERE CLI_CODIGO"+GetWhere("=",cCodPro),.t.)
+  ELSE
+   oTable:=OpenTable("SELECT PRO_NOMBRE AS CLI_NOMBRE FROM DPPROVEEDOR WHERE PRO_CODIGO"+GetWhere("=",cCodPro),.t.)
+  ENDIF
+
+  oTable:End()
+
+  // cPersona:=SAYOPTIONS("DPCLIENTES","CLI_TIPPER",oTable:CLI_TIPPER)
+
+  oGasCom:=DOCENC(cTitle,"oGasCom","DRDOCFPITF.EDT")
+
+  oGasCom:cCodSuc   :=cCodSuc
+  oGasCom:cTable   :=cTable
+  oGasCom:nNeto    :=SQLGET(cTable,"DOC_DI",cWhere)
+  oGasCom:nValCa2   :=SQLGET(cTable,"DOC_VALCA2",cWhere)
+  oGasCom:cCodPro   :=cCodPro
+  oGasCom:cNumDoc   :=cNumDoc
+  oGasCom:cTipDoc   :=cTipDoc
+  oGasCom:cNomDoc   :=cNomDoc
+  oGasCom:cTipITF   :=cTipITF
+  oGasCom:nPorITF   :=nPorITF
+  oGasCom:nBasITF   :=SQLGET(cTable,"DOC_BASITF",cWhere)
+  oGasCom:nMtoITF   :=SQLGET(cTable,"DOC_MTOITF",cWhere)
+  oGasCom:nTotDoc     :=oGasCom:nNeto+oGasCom:nMtoITF
+  oGasCom:cNumRet   :=cNumRet
+  oGasCom:aMetodos   :=aMetodos
+  oGasCom:cPostSave :="POSTSAVE"
+  oGasCom:cPreSave :="PREGRABAR"
+  oGasCom:cCancel   :="GASCANCEL"
+  oGasCom:cWhereDoc :=cWhere
+
+  oGasCom:CLI_NOMBRE:=oTable:CLI_NOMBRE
+  oGasCom:lBar      :=.T.
+  oGasCom:cScope    :=cWhere
+  oGasCom:SetTable(cTable,"DOC_CODSUC,DOC_TIPDOC,DOC_CODIGO,DOC_NUMERO"," WHERE "+cWhere)
+  oGasCom:nOption   :=3
+  oGasCom:lValUnique:=.F. 
+  oGasCom:lAutoEdit :=.F.
+
+ // oGasCom:nBase  :=oDp:nBase
+  oGasCom:Windows(0,0,380,1000)
+
+  @ 2,01 GROUP oGrp TO 4, 21.5 PROMPT "[ "+IIF(cTable="DPDOCCLI",GetFromVar("{oDp:xDPCLIENTES}"),GetFromVar("{oDp:xDPPROVEEDOR}"))+":"+ALLTRIM(oGasCom:DOC_CODIGO)+" ]"
+  @ 2,10 GROUP oGrp TO 4, 21.5 PROMPT "["+cNomDoc+" ]"
+
+  @ 01,10 GROUP oGrp TO 02, 21.5 PROMPT " Total a Pagar "
+
+  @ 2,5 SAY oCLI_NOMBRE PROMPT oGasCom:CLI_NOMBRE
+  @ 2,5 SAY oGasCom:oTotDoc PROMPT TRAN(oGasCom:nTotDoc,"99,999,999,999.99") RIGHT
+
+
+  @ 2,1 SAY "#"+oGasCom:cNumDoc
+  @ 2,1 SAY "Fecha:"+DTOC(oGasCom:DOC_FECHA)
+  @ 10,36 SAY oGasCom:oBasITF PROMPT TRAN(oGasCom:nBasITF,"99,999,999,999.99") RIGHT
+  @ 11,28 SAY oGasCom:oMtoITF PROMPT TRAN(oGasCom:nMtoITF,"99,999,999,999.99") RIGHT
+  @ 10,24 SAY "Base IGTF"
+  @ 10,32 SAY "Monto IGTF"
+  @ 2.0,60 SAY "Neto" SIZE 60,12
+  @ 2.2,60 SAY oGasCom:oNeto PROMPT TRAN(oGasCom:nNeto,"99,999,999,999.99") SIZE 60,12 RIGHT
+
+
+  cSql:=" SELECT "+SELECTFROM("DPDOCFPITF",.F.)+;
+        ",CONCAT(DFI_TIPO,'-',IF(ISNULL(ICJ_NOMBRE),TDB_NOMBRE,ICJ_NOMBRE)) AS ICJ_NOMBRE "+;
+        " FROM DPDOCFPITF "+;
+         " LEFT JOIN DPCAJAINST ON DFI_TIPO=ICJ_CODIGO "+;
+         " LEFT JOIN DPBANCOTIP ON DFI_TIPO=TDB_CODIGO " 
+
+  oGrid:=oGasCom:GridEdit( "DPDOCFPITF" , oGasCom:cPrimary , "DFI_CODSUC,DFI_TIPDOC,DFI_CODIGO,DFI_NUMERO" , cSql ) 
+
+  oGrid:cScript  :="DPDOCFPITF"
+  oGrid:aSize    :={110-20,0,788+200,250-60}
+  oGrid:oFont    :=oFont
+  oGrid:bValid   :=".T."
+  oGrid:lBar     :=.F.
+  oGrid:lTotal   :=.T.
+  oGrid:oFontH   :=oFontB
+  oGrid:oFontB   :=oFontB
+// oGrid:AddBtn("xprint.bmp","imprimir Retención","oGrid:nOption=0","oGrid:GridPrint()")
+  oGrid:cPostSave:="GRIDPOSTSAVE"
+  oGrid:cPreSave :="GRIDPRESAVE"
+  oGrid:cPreSave :="GRIDPRESAVE"
+  oGrid:cPostDelete:="GRIDPOSTDELETE" 
+  oGrid:cLoad    :="GRIDLOAD"
+  oGrid:cTotal   :="GRIDTOTAL" 
+  oGrid:oFontH   :=oFontB // Fuente para los Encabezados
+  oGrid:cPrint   :="GRIDPRINT"
+  oGrid:lPrint   :=.T.
+  oGrid:cItem       :="DFI_ITEM"
+
+  oGrid:nClrPane1   :=16774378
+  oGrid:nClrPane2   :=16772313
+
+  oGrid:nClrPaneH   := 16700847
+  oGrid:nClrTextH   := CLR_BLACK 
+  oGrid:nRecSelColor:= 16700847
+  oGrid:nClrPaneF   := 16700847
+  oGrid:nClrTextF   := CLR_BLACK 
+
+  // Concepto
+  oCol:=oGrid:AddCol("DFI_TIPO")
+  oCol:cTitle   :="Tipo"
+ // oCol:bValid   :={||ISSQLGET("DPCAJAINST","ICJ_CODIGO",oGrid:DFI_TIPO)}
+  oCol:cMsgValid:="Instrumento No Existe"
+  oCol:nWidth   :=120
+  oCol:cListBox :="DPCAJAINST.LBX"
+ // oCol:cWhereListBox:="ICJ_INGRES=1 AND ICJ_ACTIVO=1"
+  oCol:cWhereListBox:="ICJ_INGRES=1"
+  oCol:lPrimary :=.T. // No puede Repetirse
+//oCol:bPostEdit:='oGrid:ColCalc("RXP_DESCRI")' 
+  oCol:nEditType:=EDIT_GET_BUTTON
+  oCol:bValid    :="oGrid:ValInst()"
+
+/*
+  oCol:=oGrid:AddCol("ICJ_NOMBRE")
+  oCol:cTitle    :="Tipo"
+  oCol:nWidth    :=140
+  oCol:aItems    :=ACLONE(oGasCom:aMetodos)
+  oCol:aItemsData:=ACLONE(oGasCom:aMetodos)
+ // oCol:bWhen     :="!EMPTY(oGrid:DCG_CODGAS)"
+  oCol:lPrimary :=.T. // No puede Repetirse
+ oCol:bValid    :="oGrid:ValInst()"
+*/
+  // Divisa
+  oCol:=oGrid:AddCol("DFI_CODMON")
+  oCol:cTitle   :="Divisa"
+  oCol:bValid   :={||oGrid:VDCG_CODMON(oGrid:DFI_CODMON)}
+  oCol:cMsgValid:=oDp:DPTABMON+" no Existe"
+  oCol:nWidth   :=60
+  oCol:cListBox :="DPTABMON.LBX"
+  oCol:lItems   :=.T.
+  oCol:nEditType:=EDIT_GET_BUTTON
+ // oCol:bWhen     :="!(oGrid:DFI_CAJBCO)"
+  oCol:bWhen     :=".F."
+
+
+
+ /*
+  
+  oCol:=oGrid:AddCol("DCG_VALDIV")
+  oCol:cTitle   :="Valor"
+  oCol:cPicture :="99,999.999"
+  oCol:nWidth   :=70
+  oCol:lTotal   :=.F.
+  oCol:bValid   :={||oGrid:DCG_VALDIV>0}
+  oCol:cMsgValid:="Monto debe ser Mayor que Cero"
+
+
+  oCol:=oGrid:AddCol("DCG_MTODIV")
+  oCol:cTitle   :="Cantid"
+  oCol:cPicture :="999,999,999,999.99"
+  oCol:nWidth   :=120
+  oCol:lTotal   :=.F.
+  oCol:bValid   :={||oGrid:DCG_MTODIV>0}
+  oCol:bValid   :={||oGrid:VDCG_MTODIV()}
+  oCol:cMsgValid:="Monto debe ser Mayor que Cero"
+
+*/
+  oCol:=oGrid:AddCol("DFI_DI")
+  oCol:cTitle   :="Monto Divisas"
+  oCol:cPicture :="999,999,999,999.99"
+  oCol:nWidth   :=120
+  oCol:lTotal   :=.T.
+  oCol:bValid   :={||oGrid:DFI_DI>0}
+  oCol:bValid   :={||oGrid:VDCG_MTODIV()}
+  oCol:cMsgValid:="Monto debe ser Mayor que Cero"
+
+
+  oCol:=oGrid:AddCol("DFI_MONTO")
+  oCol:cTitle   :="Monto Bs"
+  oCol:cPicture :="999,999,999,999.99"
+  oCol:nWidth   :=150
+  oCol:lTotal   :=.T.
+  oCol:bValid   :={||oGrid:DFI_MONTO>0}
+  oCol:cMsgValid:="Monto debe ser Mayor que Cero"
+  oCol:bWhen     :=".F."
+
+
+
+
+  oGasCom:oFocus:=oGrid:oBrw
+
+  oGasCom:Activate()
+
+RETURN
+
+/*
+// Carga los Datos
+*/
+FUNCTION LOAD()
+RETURN .T.
+
+/*
+// Ejecuta la Impresión del Documento
+*/
+FUNCTION PRINTER()
+RETURN .T.
+
+/*
+// Permiso para Borrar
+*/
+FUNCTION PREDELETE()
+LOCAL cWhereP:="DOC_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DOC_TIPDOC"+GetWhere("=", oGasCom:cTipITF)+ " AND "+;
+           "DOC_FACAFE"+GetWhere("=",oGasCom:cNumDoc)+ " AND "+;
+           "DOC_TIPTRA"+GetWhere("=","D"    )+" AND DOC_ACT=1"
+LOCAL cNumero:=SQLGET(oGasCom:cTable,"DOC_NUMERO",cWhereP)
+
+IF Empty(cNumero)
+  MensajeErr("Documento no Activo")
+ELSE
+  IF !Empty(cWhereP)
+   SQLUPDATE(oGasCom:cTable,{"DOC_ACT","DOC_ESTADO"},{0,"NU"},cWhereP)
+   cWhereP:="DFI_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DFI_TIPDOC"+GetWhere("=", oGasCom:cTipDoc)+ " AND "+;
+           "DFI_CODIGO"+GetWhere("=",oGasCom:cCodPro)+ " AND "+;
+           "DFI_NUMERO"+GetWhere("=",oGasCom:cNumDoc)+ " AND "+;
+           "DFI_TIPTRA"+GetWhere("=","D"    )+" AND "+;
+           "DFI_DOCORG"+GetWhere("=",IIF(oGasCom:cTable="DPDOCCLI","V","C"))
+
+   SQLDELETE("DPDOCFPITF",cWhereP)
+   //?clpcopy(odp:csql)
+   MsgInfo("Documento Anulado")
+   oGasCom:Close
+   RETURN .F.   
+  ENDIF
+ENDIF
+
+RETURN .F.
+
+/*
+// Después de Borrar
+*/
+FUNCTION POSTDELETE()
+RETURN .T.
+
+FUNCTION POSTSAVE()
+
+ // MsgRun("Distribuyendo Gastos","Por Favor Espere", {|| EJECUTAR("DPDOCPROGASDIS",oGasCom:cCodSuc,;
+                                                       oGasCom:cTipDoc,;
+                                                       oGasCom:cCodPro,;
+                                                       oGasCom:cNumDoc) } )
+  
+  oGasCom:GRIDPRINT()
+  oGasCom:Close()
+  
+RETURN .T.
+/*
+// Cancel
+*/
+FUNCTION GASCANCEL()
+   oGasCom:CLOSE()
+RETURN .T.
+
+/*
+// Carga para Incluir o Modificar en el Grid
+*/
+FUNCTION GRIDLOAD()
+   LOCAL nTotal:=0
+ 
+
+//   oGrid:DCG_CODSUC:=oGasCom:DOC_TIPDOC
+//   oGrid:DCG_TIPDOC:=oGasCom:DOC_TIPDOC
+//   oGrid:DCG_CODIGO:=oGasCom:DOC_CODIGO
+//   oGrid:DCG_NUMERO:=oGasCom:DOC_NUMERO
+
+  IF oGrid:nOption=1
+    //oGrid:Set("DCG_CODMON",oDp:cMoneda,.T.)       
+
+//     oGrid:Set("MOC_CODSUC",oDp:cSucursal)
+//     oGrid:Set("MOC_ACTUAL",oDp:+GetWhere("=",cActual)
+
+     nTotal:=ABS(oGasCom:nTotDoc-ROUND(oGrid:GetTotal("DFI_DI"),2))
+     //nTotal:=nTotal*IIF(nTotal=0,1,-1)
+     oGrid:Set("DFI_DI",nTotal,.T.)
+  ENDIF
+
+
+
+
+
+
+RETURN NIL
+
+/*
+// Ejecución despues de Grabar el Item
+*/
+FUNCTION GRIDPOSTSAVE()
+ oGasCom:CalTotal()
+
+RETURN .T.
+
+
+/*
+// Genera los Totales por Grid
+*/
+FUNCTION GRIDTOTAL()
+RETURN .T.
+
+FUNCTION GRIDPRINT()
+  LOCAL oRep
+/*
+  oRep:=REPORTE("DPCOMGAS")
+  oRep:SetRango(1,oGasCom:cCodPro,oGasCom:cCodPro)
+  oRep:SetRango(2,oGasCom:cNumDoc,oGasCom:cNumDoc)
+
+  oRep:SetCriterio(1,oGasCom:cTipDoc)
+  oRep:SetCriterio(2,oGasCom:cCodSuc)
+*/
+
+RETURN .T.
+
+/*
+// Pre-Grabar
+*/
+FUNCTION GRIDPRESAVE()
+LOCAL nTotDi:=0
+
+  oGrid:DFI_TIPTRA:="D"
+  oGrid:DFI_DOCORG:=IIF(oGasCom:cTable="DPDOCCLI","V","C")
+
+  IF oGrid:nOption=1
+    // oGrid:DCG_FECHA:=oDp:dFecha
+    // oGrid:DCG_HORA :=TIME()
+  ENDIF
+
+  //?oGrid:DFI_MONTO:=ROUND(oGasCom:nValCa2*oGrid:DFI_DI,2)
+  oGrid:Set("DFI_MONTO",ROUND(oGasCom:nValCa2*oGrid:DFI_DI,2),.T.)       
+  
+
+  nTotDi:=oGrid:GetTotal("DFI_DI")
+
+  //?oGasCom:nValCa2,oGrid:DFI_DI
+
+
+RETURN .T.
+
+FUNCTION DCGCODGAS()
+  LOCAL lResp:=.T.
+
+  lResp:=ISSQLGET("DPGASTOSCOMPRA","GAS_CODIGO",oGrid:DCG_CODGAS)
+
+RETURN lResp
+
+
+
+
+// Valida Código de la Divisa
+FUNCTION VDCG_CODMON(cCodMon)
+   LOCAL dFecha,cHora
+
+   IF Empty(SQLGET("DPTABMON","MON_CODIGO","MON_CODIGO"+GetWhere("=",cCodMon)))
+       RETURN .F.
+    ENDIF
+
+RETURN .T.
+
+FUNCTION VDCG_MTODIV()
+  LOCAL nMonto
+
+ // ?oGasCom:nValCa2,oGrid:DFI_DI
+  nMonto:=ROUND(oGasCom:nValCa2*oGrid:DFI_DI,2)
+
+  oGrid:Set("DFI_MONTO",nMonto,.T.)
+
+RETURN .T.
+
+
+FUNCTION ValInst(cInstru)
+/*LOCAL nPos:=AT("-",OGRID:ICJ_NOMBRE)
+LOCAL cTipo:=LEFT(oGRID:ICJ_NOMBRE,nPos-1)
+LOCAL cDescri:=SUBS(oGRID:ICJ_NOMBRE,nPos+1)
+*/
+LOCAL cCodMon
+
+
+ //?cTipo,cDescri
+//  cCodMon:=SQLGET("DPCAJAINST","ICJ_CODMON","ICJ_CODIGO"+GetWhere("=",cTipo)+ " AND ICJ_NOMBRE"+GetWhere("=",cDescri))
+  cCodMon:=SQLGET("DPCAJAINST","ICJ_CODMON","ICJ_CODIGO"+GetWhere("=",oGrid:DFI_TIPO))
+
+ IF !Empty(cCodMon)
+  oGRID:DFI_TIPO:=cTipo
+  oGrid:Set("DFI_CODMON",cCodMon,.T.)
+  oGrid:DIF_CAJBCO:=.T.
+ ELSE
+
+  IF !Empty(SQLGET("DPBANCOTIP","TDB_CODIGO","TDB_CODIGO"+GetWhere("=",cTipo)+ " AND TDB_NOMBRE"+GetWhere("=",cDescri)))
+   oGRID:DFI_TIPO:=cTipo
+   oGrid:DIF_CAJBCO:=.F.
+  ELSE
+   MensajeErr("Instrumento no Valido")
+   RETURN .F.
+  ENDIF
+ ENDIF
+
+ //?  oGrid:DIF_CAJBCO
+
+RETURN .T.
+
+FUNCTION CalTotal()
+
+LOCAL cWhereP:="DFI_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+" AND "+;
+          "DFI_TIPDOC"+GetWhere("=",oGasCom:cTipDoc)+" AND "+;
+          "DFI_CODIGO"+GetWhere("=",oGasCom:cCodPro)+" AND "+;
+          "DFI_NUMERO"+GetWhere("=",oGasCom:cNumDoc)+" AND "+;
+          "DFI_CODMON"+GetWhere("<>",oDp:cMoneda)+" AND "+;
+          "DFI_TIPTRA='D'"
+
+
+
+  oGasCom:nBasITF:=SQLGET("DPDOCFPITF","SUM(DFI_DI)",cWhereP)
+  oGasCom:nMtoITF:=PORCEN(oGasCom:nBasITF,oGasCom:nPorITF)
+  oGasCom:nTotDoc:=oGasCom:nNeto+oGasCom:nMtoITF
+
+  oGasCom:oMtoITF:Refresh(.T.)
+  oGasCom:oBasITF:Refresh(.T.) 
+  oGasCom:oTotDoc:Refresh(.T.) 
+
+  //?oGasCom:nBasITF,oGasCom:nMtoITF,CLPCOPY(oGasCom:cScope)
+  IF oGasCom:nMtoITF>0 .AND. !Empty(oGasCom:cScope)
+   IF !oGasCom:CrearDoc()
+     RETURN .F.
+   ENDIF
+  ENDIF
+ 
+ IF !Empty(oGasCom:cScope)
+  SQLUPDATE(oGasCom:cTable,"DOC_PORITF",oGasCom:nPorITF,oGasCom:cScope)
+  SQLUPDATE(oGasCom:cTable,"DOC_BASITF",oGasCom:nBasITF,oGasCom:cScope)
+ // ?CLPCOPY(ODP:CSQL)
+  SQLUPDATE(oGasCom:cTable,"DOC_MTOITF",oGasCom:nMtoITF,oGasCom:cScope)
+ ENDIF
+
+RETURN .T.
+// EOF
+
+
+
+
+FUNCTION GRIDPOSTDELETE ()
+oGasCom:CalTotal()
+RETURN .T.
+
+
+
+FUNCTION CrearDoc()
+  LOCAL lIva:=.F.,cTipIva:="GN",nPorIva:=0,nBase,nDias:=0 
+   LOCAL cZona:="",nCxC:=IIF(oGasCom:cTipITF="ITF",1,-1)
+   LOCAL cTipDoc:=oGasCom:cTipITF,cNumero,cWhereDoc,cWhereAso
+   LOCAL oTable,oDocAso,nPagos:=0
+   LOCAL cCxC:=IIF(oGasCom:cTable="DPDOCCLI","DOC_CXC","DOC_CXP")
+
+   // Programar
+   //?"pendiente"
+
+
+   //nCxC :=EJECUTAR("DPTIPCXC",cTipDoc)
+   //nDias:=MYSQLGET("DPCLIENTES","CLI_DIAS","CLI_CODIGO"+GetWhere("=",
+   // IIF(SQLGET("DPTIPDOCCLI","TDC_CXC","TDC_TIPO"+GetWhere("=",cTipDoc))="D",1,-1)
+
+   //?oGasCom_cCodSuc,oGasCom_cTipDoc,oGasCom:cNumDoc
+
+   cWhereDoc:="DOC_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DOC_TIPDOC"+GetWhere("=",oGasCom:cTipDoc)+ " AND "+;
+           "DOC_NUMERO"+GetWhere("=",oGasCom:cNumDoc)+ " AND "+;
+           "DOC_TIPTRA"+GetWhere("=","P"    )
+
+
+   nPagos:=SQLGET(oGasCom:cTable,"ROUND(SUM(DOC_NETO*"+cCxC+"),2)",cWhereDoc)
+   IF nPagos<>0
+    MensajeErr("Documento tiene Pagos Asociados")
+    RETURN .F.
+   ENDIF
+
+   cWhereDoc:="DOC_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DOC_TIPDOC"+GetWhere("=",oGasCom:cTipDoc)+ " AND "+;
+           "DOC_NUMERO"+GetWhere("=",oGasCom:cNumDoc)+ " AND "+;
+           "DOC_TIPTRA"+GetWhere("=","D"    )
+
+
+   cWhereAso:="DOC_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DOC_TIPDOC"+GetWhere("=",cTipDoc)+ " AND "+;
+           "DOC_FACAFE"+GetWhere("=",oGasCom:cNumDoc)+ " AND "+;
+           "DOC_TIPTRA"+GetWhere("=","D"    )
+         
+   oTable:=OpenTable("SELECT * FROM "+oGasCom:cTable+" WHERE  "+cWhereDoc,.T.)
+   //otable:browse()
+   // ?clpcopy(odp:csql)
+   oDocAso:=OpenTable("SELECT * FROM "+oGasCom:cTable+" WHERE  "+cWhereAso,.T.)
+  // ?clpcopy(odp:csql)
+
+   // ? "AGREGA EL DOCUMENTO",cTipDoc,"NO PUEDE QUEDAR VACIO",nMonto
+   // ? cRecTipDoc,"cRecTipDoc"
+
+
+   //OTABLE:BROWSE()
+   IF oDocAso:RecCount()=0 
+      AEVAL(oTable:aFields,{|a,n|oDocAso:Replace(a[1],oTable:FieldGet(a[1]))})
+      oDocAso:AppendBlank()
+      cWhereAso:=""
+
+    //  cNumero:=SQLINCREMENTAL("DPDOCCLI","DOC_NUMERO","DOC_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DOC_TIPDOC"+GetWhere("=",cTipDoc)+ " AND "+;
+           "DOC_TIPTRA"+GetWhere("=","D"    ))
+    cNumero:=oDocAso:DOC_NUMERO
+   ELSE
+     cNumero:=oDocAso:DOC_NUMERO
+     cWhereAso:=oDocAso:cWhere
+   ENDIF
+
+  // ?"CWHERE ASO CREAR ",CWHEREASO
+   oDocAso:Replace("DOC_NUMERO", cNumero     )
+   oDocAso:Replace("DOC_ESTADO", "AC"     )
+   oDocAso:Replace("DOC_ACT", 1     )
+   oDocAso:Replace("DOC_CODSUC", oGasCom:cCodSuc)
+   oDocAso:Replace("DOC_CODIGO", oGasCom:cCodPro   )
+   oDocAso:Replace("DOC_TIPDOC", cTipDoc     )
+   oDocAso:Replace("DOC_TIPTRA", "D"         )
+   oDocAso:Replace(cCxC, nCxC         )
+   oDocAso:Replace("DOC_FECHA" , oDp:dFecha      )
+   oDocAso:Replace("DOC_NETO"  , ABS(oGasCom:nMtoITF*oTable:DOC_VALCA2) )
+   oDocAso:Replace("DOC_DOCORG", "D"         ) // Es Pago
+   oDocAso:Replace("DOC_TIPAFE", oGasCom:cTipDoc     )
+   oDocAso:Replace("DOC_FACAFE", oGasCom:cNumDoc)
+   oDocAso:Replace("DOC_PORITF"  ,oGasCom:nPorITF)
+   oDocAso:Replace("DOC_BASITF"  ,oGasCom:nBasITF)
+   oDocAso:Replace("DOC_MTOITF"  ,oGasCom:nMtoITF)
+   oDocAso:Replace("DOC_NETO"  , ABS(oGasCom:nMtoITF*oTable:DOC_VALCA2) )
+   oDocAso:Replace("DOC_DI", ABS(oGasCom:nMtoITF))
+   oDocAso:Commit( cWhereAso )
+
+   oDocAso:End()
+   oTable:End()
+
+  cNumero:=SQLGET(oGasCom:cTable,"DOC_NUMERO","DOC_CODSUC"+GetWhere("=",oGasCom:cCodSuc)+ " AND "+;
+           "DOC_TIPDOC"+GetWhere("=",cTipDoc)+ " AND "+;
+           "DOC_FACAFE"+GetWhere("=",oGasCom:cNumDoc)+ " AND "+;
+           "DOC_TIPTRA"+GetWhere("=","D"    ))
+
+
+
+   // ?clpcopy(odp:csql)
+
+  IF Empty(cNumero)
+   MensajeErr("Documento No Generado ")
+  ELSE
+   MsgInfo("Documento Generado: "+cNumero)
+  ENDIF 
+
+  
+  /*
+   lIva:=MYSQLGET("DPTIPDOCCLI","TDC_LIBVTA","TDC_TIPO"+GetWhere("=",cTipDoc))
+  
+   IF lIva 
+
+     nPorIva:=EJECUTAR("IVACAL",cTipIva,nCol,dFecha)
+     nMonto :=ABS(nMonto)
+     nBase  :=DIV(nPorIva,100)+1
+     nBase  :=DIV(nMonto,nBase)
+     cCondic:=MYSQLGET("DPTIPDOCCLI","TDC_DESCRI","TDC_TIPO"+GetWhere("=",cTipDoc))
+
+     oTable:=OpenTable("SELECT * FROM DPDOCCLICTA",.t.)
+     oTable:Append()
+     oTable:Replace("CCD_TIPDOC", cTipDoc      )
+     oTable:Replace("CCD_CODSUC", cCodSuc      )
+     oTable:Replace("CCD_NUMERO", cNumero      )
+     oTable:Replace("CCD_TIPTRA", "D"          )
+     oTable:Replace("CCD_MONTO" , nBase        )
+     oTable:Replace("CCD_TIPIVA", cTipIva      )
+     oTable:Replace("CCD_PORIVA", nPorIva      )
+     oTable:Replace("CCD_CODCTA", oDp:cCtaIndef)
+     oTable:Replace("CCD_CENCOS", oDp:cCenCos  )
+     oTable:Replace("CCD_ITEM"  , STRZERO(1,4) )
+     oTable:Replace("CCD_ACT"   , 1            )
+     oTable:Replace("CCD_CTAEGR", oDp:cCtaIndef)
+     oTable:Replace("CCD_TIPCTA", "C"          )
+     oTable:Replace("CCD_DESCRI", cCondic      )
+     oTable:Commit()
+
+   ENDIF
+*/
+   // Debe Asignar en el Recibo el Documento Asociado
+
+
+RETURN .T.
+
+
+// Pre-Grabar
+FUNCTION PREGRABAR()
+   oGasCom:Cancel()
+   oGasCom:Close()
+   RETURN .F.
+
+RETURN .T.

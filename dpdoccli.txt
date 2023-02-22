@@ -1,0 +1,169 @@
+[ID]
+ NUMERO=0300
+ NOMBRE=DPDOCCLI
+ DESCRIPCION=Documentos de Clientes                  
+ CONFIG=F
+ SINGUL=Documento                     
+ APLICA=03
+ PRIMARY_KEY=''
+[END_ID]
+
+[FIELDS]
+ C001=DOC_TIPDOC          ,'C',003,0,'','Tipo de Documento',0
+ C002=DOC_CODIGO          ,'C',010,0,'','Cliente',1
+ C003=DOC_NUMERO          ,'C',010,0,'','Número',1
+ C004=DOC_FECHA           ,'D',008,0,'','Fecha',0
+ C005=DOC_CODVEN          ,'C',006,0,'','Vendedor',1
+ C006=DOC_CODSUC          ,'C',006,0,'','Sucursal',1
+ C007=DOC_NETO            ,'N',014,2,'','Neto',0
+ C008=DOC_DCTO            ,'N',006,2,'','% Descuento',0
+ C009=DOC_RECARG          ,'N',006,2,'','% Recargo',0
+ C010=DOC_OTROS           ,'N',014,2,'','Otros Montos',0
+ C011=DOC_CENCOS          ,'C',008,0,'','Centros de Costos',1
+ C012=DOC_CODMON          ,'C',003,0,'','Moneda',0
+ C013=DOC_CONDIC          ,'C',035,0,'','Condición',0
+ C014=DOC_PLAZO           ,'N',002,0,'','Plazo',0
+ C015=DOC_FCHVEN          ,'D',008,0,'','Vence',0
+ C016=DOC_HORA            ,'C',008,0,'','Hora',0
+ C017=DOC_IMPOTR          ,'N',014,2,'','Otros Impuestos',0
+ C018=DOC_VALCAM          ,'N',014,4,'','Valor Cambiario',0
+ C019=DOC_NUMMEM          ,'N',008,0,'','Número de Memo',0
+ C020=DOC_FAVORI          ,'L',001,0,'','Favorito',0
+ C021=DOC_ESTADO          ,'C',002,0,'','Estado del Documento',0
+ C022=DOC_TIPTRA          ,'C',001,0,'','Tipo de Transacción',0
+ C023=DOC_RECNUM          ,'C',008,0,'','Recibo',1
+ C024=DOC_CXC             ,'N',002,0,'','Relación CxC',0
+ C025=DOC_NUMFIS          ,'C',010,0,'','Número Fiscal',0
+ C026=DOC_DESTIN          ,'C',001,0,'','Nacional o Exportación',0
+ C027=DOC_CODTRA          ,'C',006,0,'','Transporte',1
+ C028=DOC_USUARI          ,'C',003,0,'','Usuario',1
+ C029=DOC_DESCCO          ,'C',030,0,'','Descuentos en Cascada',0
+ C030=DOC_ACT             ,'N',002,0,'','Estatus del Documento',0
+ C031=DOC_SERFIS          ,'C',001,0,'','Serie Fiscal',0
+ C032=DOC_NUMPAG          ,'N',002,0,'','Páginas Control Fiscal',0
+ C033=DOC_MODFIS          ,'C',015,0,'','Modelo Fiscal',0
+ C034=DOC_FACAFE          ,'C',010,0,'','Factura Afectada',1
+ C035=DOC_FCHREC          ,'D',008,0,'','Fecha de Recepción',0
+ C036=DOC_MTOCOM          ,'N',016,2,'','Monto de Comisión',0
+ C037=DOC_CBTNUM          ,'C',008,0,'','Comprobante Contable',1
+ C038=DOC_ANUFIS          ,'L',001,0,'','Anulación Fiscal',0
+ C039=DOC_NUMPER          ,'C',008,0,'','Documento Periódico',1
+ C040=DOC_ZONANL          ,'C',001,0,'','Zona Libre o Nacional',0
+ C041=DOC_DOCORG          ,'C',001,0,'','Origen del Documento',0
+ C042=DOC_GIRNUM          ,'C',008,0,'','Número de Registro de Giros',1
+ C043=DOC_TIPAFE          ,'C',003,0,'','Tipo de Documento Afectado',0
+ C044=DOC_IMPRES          ,'L',001,0,'','Impreso',0
+ C045=DOC_INVMON          ,'L',001,0,'','Productos Divisas',0
+ C046=DOC_CREREC          ,'L',001,0,'','Creado en Recibo',0
+ C047=DOC_NUMGTR          ,'C',008,0,'','Número de guia de Transporte',1
+ C048=DOC_BASNET          ,'N',017,2,'','Monto Neto',0
+ C049=DOC_PLAEXP          ,'C',010,0,'','Planilla de Exportación',1
+ C050=DOC_EXPEXP          ,'C',010,0,'','Expediente de Exportación',0
+ C051=DOC_MTOIVA          ,'N',016,2,'','Monto del IVA',0
+ C052=DOC_SUCCLI          ,'C',004,0,'','Sucursal del Cliente',1
+ C053=DOC_NUMIMP          ,'N',002,0,'','Cantidad de Impresiones',0
+ C054=DOC_ASODOC          ,'C',019,0,'','Documento Asociado',0
+ C055=DOC_CODTER          ,'C',012,0,'','Código de Terceros',0
+ C056=DOC_FILMAI          ,'N',007,0,'','Digitalización',0
+ C057=DOC_MTOEXE          ,'N',016,2,'','Monto Excento',0
+ C058=DOC_TIPORG          ,'C',003,0,'','Tipo de Documento Origen',0
+ C059=DOC_CODPER          ,'C',006,0,'','Código Personal',0
+ C060=DOC_IVAREB          ,'N',002,0,'','%Rebaja del IVA',0
+ C061=DOC_IVABAS          ,'N',014,2,'','Base del IVA',0
+ C062=DOC_VALCA2          ,'N',014,4,'','Valor Cambiario 2',0
+ C063=DOC_DI              ,'N',012,2,'','Monto DI',0
+ C064=DOC_PORITF          ,'N',004,2,'','Porcentaje de ITF',0
+ C065=DOC_BASITF          ,'N',012,2,'','Base ITF',0
+ C066=DOC_MTOITF          ,'N',012,2,'','Monto ITF',0
+ C067=DOC_APLCOM          ,'C',001,0,'','Aplica Comision',0
+[END_FIELDS]
+
+[TABLE_MAIN]
+ T001=DPCENCOS                , DOC_CENCOS=CEN_CODIGO <UPDATE>  <RUN>
+ T002=DPCLIENTES              , DOC_CODIGO=CLI_CODIGO <UPDATE>  <RUN>
+ T003=DPTABMON                , DOC_CODMON=MON_CODIGO <UPDATE>  <RUN>
+ T004=DPSUCURSAL              , DOC_CODSUC=SUC_CODIGO <UPDATE>  <RUN>
+ T005=DPTERCEROS              , DOC_CODTER=TDC_CODIGO <UPDATE>  <RUN>
+ T006=DPVENDEDOR              , DOC_CODVEN=VEN_CODIGO <UPDATE>  <RUN>
+ T007=DPTIPDOCCLI             , DOC_TIPDOC=TDC_TIPO <UPDATE>  <RUN>
+[END_TABLE_MAIN]
+
+[TABLE_REL]
+ T001=DPDOCCLICTA             , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=CCD_CODSUC,CCD_TIPDOC,CCD_NUMERO,CCD_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T002=DPCLIENTESCERO          , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=CCG_CODSUC,CCG_TIPDOC,CCG_NUMDOC,CCG_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T003=DPDOCCLICOMISION        , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=CXD_CODSUC,CXD_TIPDOC,CXD_NUMERO,CXD_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T004=DPDOCCLIDIR             , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=DIR_CODSUC,DIR_TIPDOC,DIR_NUMDOC,DIR_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T005=DPCLIENTEPROG           , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=DPG_CODSUC,DPG_TIPDOC,DPG_NUMDOC,DPG_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T006=DPDOCCLIIVA             , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=IXD_CODSUC,IXD_TIPDOC,IXD_NUMERO,IXD_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T007=DPDOCCLIRTI             , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=RTI_CODSUC,RTI_DOCTIP,RTI_DOCNUM,RTI_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T008=DPDOCCLIISLR            , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=RXC_CODSUC,RXC_DOCTIP,RXC_DOCNUM,RXC_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T009=DPDOCCLIRXE             , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=RTI_CODSUC,RTI_DOCTIP,RTI_DOCNUM,RTI_TIPTRA, <UPDATE> <DELETE> <RUN>
+ T010=DPDOCCLIORE             , DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,DOC_TIPTRA=ORE_CODSUC,ORE_DOCTIP,ORE_DOCNUM,ORE_TIPTRA, <UPDATE> <DELETE> <RUN>
+[END_TABLE_REL
+
+[LINK_VIRTUAL]
+ T001=DPCENCOS                , DOC_CENCOS=CEN_CODIGO, <CAMPO:CEN_DESCRI>, <WHERE:>
+ T002=DPCLIENTES              , DOC_CODIGO=CLI_CODIGO, <CAMPO:CLI_NOMBRE>, <WHERE:>
+ T003=DPDIARIO                , DOC_FECHA=DIA_FECHA, <CAMPO:DIA_FECHA>, <WHERE:>
+ T004=DPGUIACARGA             , DOC_CODSUC,DOC_NUMGTR=GTR_CODSUC,GTR_NUMERO, <CAMPO:GTR_ESTADO>, <WHERE:>
+ T005=DPMEMO                  , DOC_NUMMEM=MEM_NUMERO, <CAMPO:MEM_DESCRI>, <WHERE:>
+ T006=DPMOVINV                , DOC_CODSUC, DOC_TIPDOC,DOC_CODIGO,DOC_NUMERO=MOV_CODSUC,MOV_TIPDOC,MOV_CODCTA,MOV_DOCUME, <CAMPO:MOV_CODIGO>, <WHERE:>
+ T007=DPUSUARIOS              , DOC_USUARI=OPE_NUMERO, <CAMPO:OPE_NOMBRE>, <WHERE:>
+ T008=DPCLIENTESSUC           , DOC_CODIGO,DOC_SUCCLI=SDC_CODCLI,SDC_CODIGO, <CAMPO:SDC_NOMBRE>, <WHERE:>
+ T009=DPSUCURSAL              , DOC_CODSUC=SUC_CODIGO, <CAMPO:SUC_DESCRI>, <WHERE:>
+ T010=DPTIPDOCCLI             , DOC_TIPDOC=TDC_TIPO, <CAMPO:TDC_DESCRI>, <WHERE:>
+ T011=DPTRANSP                , DOC_CODTRA=TRA_CODIGO, <CAMPO:TRA_DESCRI>, <WHERE:>
+ T012=DPVENDEDOR              , DOC_CODVEN=VEN_CODIGO, <CAMPO:VEN_NOMBRE>, <WHERE:>
+[END_LINK_VIRTUAL]
+
+
+[INNER_JOIN]
+ SELECT * FROM DPDOCCLI INNER JOIN DPCENCOS ON DOC_CENCOS=CEN_CODIGO
+ SELECT * FROM DPDOCCLI INNER JOIN DPCLIENTES ON DOC_CODIGO=CLI_CODIGO
+ SELECT * FROM DPDOCCLI INNER JOIN DPTABMON ON DOC_CODMON=MON_CODIGO
+ SELECT * FROM DPDOCCLI INNER JOIN DPSUCURSAL ON DOC_CODSUC=SUC_CODIGO
+ SELECT DOC_CODIGO FROM DPDOCCLI INNER JOIN DPGUIACARGA ON DOC_CODSUC=GTR_CODSUC AND DOC_NUMGTR=GTR_NUMERO
+ SELECT * FROM DPDOCCLI INNER JOIN DPDOCINTERSUC ON DOC_CODSUC=DXS_VTASUC AND DOC_TIPDOC=DXS_VTATIP AND DOC_NUMERO=DXS_VTANUM
+ SELECT DOC_NUMERO FROM DPDOCCLI INNER JOIN DPEXPEDIENTE ON DOC_CODSUC=EXP_CODSUC AND DOC_TIPDOC=EXP_TIPDOC AND DOC_NUMERO=EXP_NUMDOC
+ SELECT DOC_CODIGO FROM DPDOCCLI INNER JOIN DPDOCCLIISLR ON DOC_CODSUC=RXC_CODSUC AND DOC_TIPDOC=RXC_TIPDOC AND DOC_NUMERO=RXC_NUMDOC
+ SELECT * FROM DPDOCCLI INNER JOIN DPTERCEROS ON DOC_CODTER=TDC_CODIGO
+ SELECT * FROM DPDOCCLI INNER JOIN DPVENDEDOR ON DOC_CODVEN=VEN_CODIGO
+ SELECT * FROM DPDOCCLI INNER JOIN DPGIROSCLI ON DOC_GIRNUM=GIR_NUMERO
+ SELECT * FROM DPDOCCLI INNER JOIN DPTIPDOCCLI ON DOC_TIPDOC=TDC_TIPO
+ SELECT * FROM DPDOCCLI INNER JOIN DPDOCCLIPROG ON DOC_CODSUC=PLC_CODSUC AND DOC_TIPDOC=PLC_TIPDES AND DOC_NUMERO=PLC_NUMDOC
+[END_INNER_JOIN]
+
+[OPTIONS]
+ C001=DOC_DESTIN          ,Nacional                                
+ C002=DOC_DESTIN          ,Exportación                             
+ C003=DOC_DESTIN          ,Nacional                                
+ C004=DOC_DESTIN          ,Exportación                             
+ C005=DOC_ESTADO          ,Pagado                                  
+ C006=DOC_ESTADO          ,Nulo                                    
+ C007=DOC_ESTADO          ,Activo                                  
+ C008=DOC_ESTADO          ,Pagado                                  
+ C009=DOC_ESTADO          ,Nulo                                    
+ C010=DOC_ESTADO          ,Activo                                  
+ C011=DOC_ESTADO          ,Exportado                               
+ C012=DOC_ESTADO          ,Nulo                                    
+ C013=DOC_ESTADO          ,Activo                                  
+ C014=DOC_ESTADO          ,Exportado                               
+ C015=DOC_TIPTRA          ,Documento                               
+ C016=DOC_TIPTRA          ,Pago                                    
+ C017=DOC_ZONANL          ,Libre                                   
+ C018=DOC_ZONANL          ,Nacional                                
+ C019=DOC_ZONANL          ,Nacional                                
+ C020=DOC_ZONANL          ,Libre                                   
+[END_OPTIONS]
+
+[COMENTARIOS]
+ C: CHAR 
+ D: DATE 
+ L: LOGICAL 1=T 0=F 
+ N: NUMERICO
+ M: MEMO
+
+[SQL]
+ SELECT <CAMPOS> FROM <TABLA> 
+ INNER JOIN XTABLA ON XCAMPO=YCAMPO 
+[ENDSQL]

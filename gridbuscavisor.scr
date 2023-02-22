@@ -1,0 +1,102 @@
+// Programa   : GRIDBUSCAINV
+// Fecha/Hora : 18/05/2006 20:17:10
+// Propósito  : Buscar Productos
+// Creado Por : Juan Navas
+// Llamado por: DPFACTURAV
+// Aplicación : Ventas
+// Tabla      : DPINV
+
+#INCLUDE "DPXBASE.CH"
+
+PROCE MAIN()
+   LOCAL cNombre:=SPACE(41),cNombre2:=SPACE(40),oGet,oGet2
+   LOCAL oDlg,oFont,oBtn,lExiste:=.F.,lLeft:=.F.
+
+// ErrorSys(.T.)
+
+   DEFINE FONT oFont  NAME "MS Sans Serif" SIZE 0, -10 BOLD
+
+   DEFINE DIALOG oDlg TITLE "Buscar "+oDp:XDPINV;
+          COLOR NIL,oDp:nGris
+
+   oDlg:lHelpIcon:=.F.
+
+   @ 0.1,1 SAY "Descripción:" SIZE 140,09 COLOR CLR_BLUE,oDp:nGris FONT oFont
+   
+   @ .8,.8 GET oGet VAR cNombre   SIZE 140,10
+
+   oGet:bKeyDown:={ |nKey| IF(nKey=13 .AND. !Empty(cNombre+cNombre2), BuscarInv() , NIL) }
+
+
+   @03.7,14 SBUTTON oBtn ;
+            SIZE 45, 20 FONT oFont;
+            FILE "BITMAPS\RUN.BMP" NOBORDER;
+            LEFT PROMPT "Buscar";
+            COLORS CLR_BLACK, { CLR_WHITE, CLR_HGRAY, 1 };
+            ACTION (BuscarInv()) CANCEL
+
+   oBtn:cToolTip:="Buscar Registros"
+   oBtn:cMsg    :=oBtn:cToolTip
+
+   @03.7,25 SBUTTON oBtn ;
+            SIZE 45, 20 FONT oFont;
+            FILE "BITMAPS\XCANCEL.BMP" NOBORDER;
+            LEFT PROMPT "Cancelar";
+            COLORS CLR_BLACK, { CLR_WHITE, CLR_HGRAY, 1 };
+            ACTION (oDlg:End()) CANCEL
+
+   oBtn:lCancel :=.T.
+   oBtn:cToolTip:="Cancelar y Cerrar Formulario "
+   oBtn:cMsg    :=oBtn:cToolTip
+
+   ACTIVATE DIALOG oDlg CENTERED ON INIT (oGet:SetFocus(),.F.)
+  
+RETURN .T.
+
+FUNCTION BuscarInv()
+   LOCAL cTitle,oCol,cCodigo
+
+   LOCAL cWhere:="WHERE INV_DESCRI LIKE "
+
+   cWhere:=cWhere+"'%"+ALLTRIM(UPPE(cNombre))+"%' "
+
+   IF !Empty(cNombre2)
+
+      cWhere:=cWhere+IIF(Empty(cWhere)," WHERE "," AND ")+;
+              " INV_DESCRI LIKE '%"+ALLTRIM(UPPE(cNombre2))+"%' "
+
+   ENDIF
+
+   CursorWait()
+
+   cTitle:=GetFromVar("{oDp:DPINV}")+" "+ALLTRIM(cNombre)
+
+   ?cCodigo:=EJECUTAR("GRIDSELVISOR",cWhere,"",cTitle,lExiste)
+
+   IF Empty(cCodigo)
+	MsgInfo("Producto no encontrado!!!","Consultando ...")
+      DPFOCUS(oGet)
+      RETURN .T.
+   ENDIF
+
+   IF cCodigo=NIL 
+      MensajeErr("Información no Encontrada ")
+      DPFOCUS(oGet)
+      RETURN .F.
+   ENDIF
+
+   IF ValType(oGrid)="O" .AND. !Empty(oVisor:cCodigo)
+     oCol:=oGrid:GetCol("MOV_CODIGO")
+     oCol:VarPut(cCodigo)
+     //?ccodigo 
+     oDlg:End()
+   ENDIF
+
+   IF !oVisor:cCodInv
+     oDlg:End()
+     DPFOCUS(oVisor:oCodInv)
+   ENDIF
+
+RETURN .T.
+// EOF
+

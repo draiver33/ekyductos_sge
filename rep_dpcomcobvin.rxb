@@ -1,0 +1,74 @@
+FUNCTION MAINoGenRep
+ 17cSql,oCursor,cMsg:="",oFont1,oFont2
+ 17nValcam:=EJECUTAR("EKYGETVALCAM",oDp:cMonedaExt,oDp:dFecha,TIME())
+ 17dFchIni
+ 17oReport,nLineas:=0
+  4oGenRep=NIL
+  2.F.
+ 14
+  1CursorWait()
+  1oGenRep:cSqlSelect :="SELECT "+GetWhere("",nValCam)+"AS TASA,VIN_CODIGO,VIN_NOMBRE,IF(VIN_TIPCOM='Gr',GRU_COMCOB,IF(DOC_CODSUC='000001',VIN_PORVEN,VIN_PORCOB)) AS VIN_PORCOB,"+ "CLI_CODIGO,CLI_NOMBRE,DOC_TIPDOC,DOC_NUMERO,"+ "MOV_CODIGO,INV_DESCRI,(IF(DOC_DOCORG='D',CCD_MONTO*DOC_CXC,MOV_TOTAL*(1-DOC_DCTO/100)*DOC_CXC)) AS MOV_TOTAL,MIN(DOC_FECHA) AS DOC_FCHDOC,"+ "SUM(DOC_NETO*DOC_CXC) AS DOC_SALDO,MAX(DOC_RECNUM) AS DOC_RECIBO,MAX(DOC_FECHA) AS DOC_FCHPAG FROM DPDOCCLI "
+  1oGenRep:cSqlInnerJoin:="LEFT JOIN DPDOCCLICTA ON DPDOCCLI.DOC_CODSUC=DPDOCCLICTA.CCD_CODSUC AND DPDOCCLI.DOC_TIPDOC=CCD_TIPDOC AND "+ "DPDOCCLI.DOC_NUMERO=CCD_NUMERO LEFT JOIN DPMOVINV ON DPDOCCLI.DOC_CODSUC=DPMOVINV.MOV_CODSUC AND DPDOCCLI.DOC_TIPDOC=DPMOVINV.MOV_TIPDOC AND "+ "DPDOCCLI.DOC_CODIGO=DPMOVINV.MOV_CODCTA AND DPDOCCLI.DOC_NUMERO=DPMOVINV.MOV_DOCUME LEFT JOIN DPINV ON DPMOVINV.MOV_CODIGO=DPINV.INV_CODIGO "+ "LEFT JOIN DPGRU ON DPINV.INV_GRUPO=DPGRU.GRU_CODIGO INNER JOIN DPCLIENTES ON DPDOCCLI.DOC_CODIGO=DPCLIENTES.CLI_CODIGO INNER JOIN DPVENDEDOR "+ "ON DPDOCCLI.DOC_CODVEN=DPVENDEDOR.VEN_CODIGO INNER JOIN DPVENMOS ON DPVENDEDOR.VEN_CODIGO=DPVENMOS.VXI_CODVEN INNER JOIN DPVENINT ON "+ " DPVENMOS.VXI_CODINT=DPVENINT.VIN_CODIGO"
+  1oGenRep:cSqlOrderBy :="GROUP BY VIN_CODIGO,VIN_NOMBRE,DOC_CODSUC,DOC_TIPDOC,DOC_NUMERO,MOV_ITEM "+ "HAVING ABS(DOC_SALDO)<0.5 AND (DOC_FCHPAG"+Getwhere(">=",RGO_I2)+" AND DOC_FCHPAG"+GetWhere("<=",RGO_F2)+")"
+  1oGenRep:cWhere :=oGenRep:BuildWhere()
+  1oGenRep:cWhere :=STRTRAN(oGenRep:cWhere,"DPDOCCLI.DOC_FECHA"+Getwhere(">=",RGO_I2)+" AND ","")
+  1oGenRep:cWhere :=oGenRep:cWhere+IF(Empty(oGenRep:cWhere)," WHERE "," AND ")+"DOC_ACT=1 AND DOC_TIPDOC IN ('FAV','DEV','NPE','NCI') AND DOC_APLCOM='S'"
+  1cSql :=oGenRep:BuildSql()
+  4!ChkSql(cSql,@cMsg)
+  1MensajeErr(cMsg,"Reporte <REPORTE>")
+  2.F.
+ 14
+  4!oGenRep:OutPut(.T.)
+  2.F.
+ 14
+  1oCursor:=OpenTable(cSql,.T.)
+  4oCursor:RecCount()=0
+  1MensajeErr("No fué posible Encontrar Información","Consulta Vacia Reporte <REPORTE>")
+  1oCursor:End()
+  2.F.
+ 14
+  1oCursor:GoTop()
+  1oFont1 := TFont():New("ARIAL",0,-10,,,,,,,,,,,,,,)
+  1oFont2 := TFont():New("ARIAL",0,-10,,.T.,,,,,,,,,,,,)
+  1oReport := DpRptBegin({{||"Comisiones de Cobranzas Vendedor Interno"},{||"Fecha: "+dtoc(Date())+" Hora: "+TIME()}},{},{{||"Página: "+str(oReport:nPage,3)+" Registros: "+alltrim(str(nLineas,5))}},{oFont1,oFont2},{},.F.,,,,.T.,,,"Comisiones de Cobranzas Vendedor Interno",,,UPPER("CENTER") )
+  1oGenRep:SetDevice(oReport)
+  1DpRptAddColumn({{||"Código"}},,{{||oCursor:VIN_CODIGO}},6,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Nombre"}},,{{||oCursor:VIN_NOMBRE}},40,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Código"}},,{{||oCursor:CLI_CODIGO}},10,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Nombre"}},,{{||oCursor:CLI_NOMBRE}},60,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Tipo de Documento"}},,{{||oCursor:DOC_TIPDOC}},3,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Número"}},,{{||oCursor:DOC_NUMERO}},10,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Código"}},,{{||oCursor:INV_CODIGO}},20,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Descripción"}},,{{||oCursor:INV_DESCRI}},150,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptEnd()
+  1oReport:bSkip:={||oCursor:DbSkip()}
+  1oReport:Activate(,{||!oCursor:Eof()},,,{||RepBitmap()},,{|oGrp|oReport:NewLine()},,,,{||ONCHANGE()},,,)
+  1oGenRep:OutPut(.F.)
+  1oFont1:End()
+  1oFont2:End()
+  2NIL
+FUNCTION ONCHANGE
+  1nLineas:=nLineas+1
+  2.T.
+FUNCTION PRINTMEMOcMemo,nCol,lData,nIni
+ 17nFor,aLines
+  4Empty(cMemo)
+  2""
+ 14
+  1nIni := If(nIni == nil,1,nIni )
+  1cMemo :=STRTRAN(cMemo,CHR(10),"")
+  1aLines:=_VECTOR(cMemo,CHR(13))
+  4lData
+  2aLines[1]
+ 14
+ 10nFor := nIni TO LEN(aLines)
+  1oReport:StartLine()
+  1oReport:Say(nCol,aLines[nFor])
+  1oReport:EndLine()
+ 11
+  1oReport:Newline()
+  2""
+FUNCTION REPBITMAP
+  1oDp:cLogoBmp := If(oDp:cLogoBmp == nil,"BITMAPS\LOGO.BMP",oDp:cLogoBmp )
+  1oReport:SayBitmap(.3,.3,oDp:cLogoBmp,.5,.5)
+  2NIL

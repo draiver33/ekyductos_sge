@@ -1,0 +1,215 @@
+// Programa   : DPAPLDIRGET2
+// Fecha/Hora : 29/05/2015 03:41:31
+// Propósito  : Obtiene los Archivos guardados en DPAPLDIR y los recupera
+// Creado Por : Juan Navas
+// Llamado por:
+// Aplicación :2
+// Tabla      :
+
+#INCLUDE "DPXBASE.CH"
+
+PROCE MAIN(lAuto)
+   LOCAL oData,aData
+   LOCAL dFecha ,cHora ,cIp
+   LOCAL dFecha_,cHora_,cIp_
+   LOCAL cDesde:="00000000-00:00:00"
+   LOCAL cHasta:=DTOS(DPFECHA())+"-"+DPHORA()
+   LOCAL cPcName:=""
+   LOCAL cIdCnf:="SRVUPDSTD",
+   LOCAL oDataS,cPcS,dDesdeS,dHastaS
+   LOCAL oDataL,cPcL,dDesdeL,dHastaL,cHoraL:="",cHoraS:=""
+   LOCAL cBin  :=LOWER(GetModuleFileName( GetInstance() ))
+   LOCAL dDesde:=DIRECTORY(cBin)[1,3] // Toma la Fecha del Binario
+   LOCAL dHasta:=EJECUTAR("DPFECHASRV"),cWhere,nDias:=0
+   LOCAL lQuitar :=.F.
+   LOCAL cFileBin:=LOWER(cFileNoPath(GetModuleFileName( GetInstance() )))
+   LOCAL lExe    :=.F.
+   LOCAL lHrb    :=.F.
+
+   DEFAULT lAuto:=.F.
+
+   // Actualiza en Cada PC lo reportes importados, actualizados o Modificados
+   EJECUTAR("REPCOMPILA_PC") // Recompila los Reportes Modificados en Otro PC
+
+   IF !ISDPSTD()
+     EJECUTAR("SCRRECOMPILA")
+   ENDIF
+
+   oData:=DATASET("DPDEFUPDATE","ALL")  // Servidor Estandar
+   oData:End()
+
+   IF Empty(oData:Get("dDesde" ,CTOD(""))) 
+      EJECUTAR("DPDEFUPDATE",.F.) // Aqui define quien es el PC que realizara el proceso de Actualizacion    
+      RETURN .T.
+   ENDIF
+
+   oDp:cPcName     :=UPPER(GETHOSTNAME())
+
+   // Este PC es quien debe Actualizar de Manera Remota
+   IF UPPER(ALLTRIM(oData:Get("cPcName","")))=oDp:cPcName
+
+      // Verifica dias
+      nDias:=DPFECHA()-oData:Get("dDesde")
+
+      IF nDias>=oData:Get("nDias",0) .AND. oData:Get("lActivo",.F.)
+	   EJECUTAR("DPSVRDOWN") // Aqui presenta formulario de descarga Según Fecha Programada
+      ENDIF
+
+      RETURN .T.
+
+   ENDIF
+
+   // Servidor que Hizo la Descarga
+   oDataS :=DATASET(cIdCnf,"ALL")  // Servidor Estandar
+   dDesdeS:=oDataS:Get("dDesde" ,dDesde  )
+   cHoraS :=oDataS:Get("cHoraD" ,""      )
+   cPcS   :=oDataS:Get("cPcName",""      )
+   oDataS:End()
+
+   IF ALLTRIM(cPcS)=ALLTRIM(oDp:cPcName) 
+      // Si es el Mismo PC (Se devuelve)
+      RETURN .F.
+   ENDIF
+
+   // Ningun PC hizo Descargas
+   IF Empty(cPcS)
+      RETURN .F.
+   ENDIF
+ 
+   // PC Local
+   oDataL :=DATASET(cIdCnf,"PC")  // Servidor Estandar
+   dDesdeL:=oDataL:Get("dDesde" ,dHasta)
+   cHoraL :=oDataL:Get("cHoraD" ,""    )
+   cPcL   :=oDataL:Get("cPcName",""    )
+   oDataL:End()
+
+   dDesde:=dDesdeL
+   dHasta:=dDesdeS
+
+   IF dDesde=dHasta .AND. cHoraS=cHoraL
+      // No Hay Actualizaciones
+//      ? "NO CAMBIO NADA"
+      RETURN .T.
+   ENDIF
+
+   // Recompila los programas importados
+   
+   IF !DPSTD()
+
+    cWhere:=" WHERE "+;
+            " PRG_CODIGO"+GetWhere("<>","DPAPLDIRGET2")+" AND "+;
+             GetWhereAnd("PRG_FECHA" ,dDesde,dHasta)+" OR "+;
+             GetWhereAnd("PRG_FCHACT",dDesde,dHasta)
+
+     MsgRun("Recompilando Programas DpXbase "+DTOC(dDesde)+"-"+DTOC(dHasta),"Por Favor Espere",;
+            {|oObj| RunCompila(oObj,cWhere) })
+
+     oDp:cDpXbaseAct:=cHasta
+
+     oData:=DATACONFIG("DPXBASE","USER")
+     oData:Set("DPXBASE",oDp:cDpXbaseAct)
+     oData:End(.T.)
+
+     IF lAuto
+       FERASE("DPXBASE\DPSVRDOWNLOCAL.DXB")
+       FERASE("SCRIPT\DPSVRDOWNLOCAL.SCR")
+       EJECUTAR("DPSVRDOWNLOCAL",.T.)
+     ENDIF
+
+   ENDIF
+
+   MsgRun("Recuperando Componentes descargados desde AdaptaPro Server "+DTOC(dDesde)+"-"+DTOC(dHasta),"Por Favor Espere",;
+          {|oDlg,oSay| DPAPLDIRGETX(oDlg,oSay,dDesde,dHasta)})
+
+   oDataS:=DATASET(cIdCnf,"ALL")  // Servidor Estandar
+   oDataS:Set("dDesde" ,dDesde  )
+   oDataS:Set("cPcName",oDp:cPcName )
+   oDataS:End(.T.)
+
+   IF lExe
+      EJECUTAR("ISNEWEXE")
+      RETURN .T.
+   ENDIF
+
+   IF lHrb
+
+//   cFileBin:=cFileNoPath(LOWER(GetModuleFileName( GetInstance() )))
+     MsgMemo("Módulos HRB Actualizados"+CRLF+"Requiere Reiniciar el Sistema"+CRLF+cFileBin)
+     winexec(cFileBin)
+     EJECUTAR("DPFIN",.T.,.F.)
+     SALIR()
+
+   ENDIF
+
+RETURN .T.
+/*
+// Descarga desde DPDIRAPL, todos los componentes
+*/
+FUNCTION DPAPLDIRGETX(oDlg,oSay,dDesde,dHasta)
+  LOCAL oTable,oDb
+  LOCAL nWidth := oDlg:nRight - oDlg:nLeft
+  LOCAL cWhere :=GetWhereAnd("DIR_FECHA",dDesde,dHasta)
+
+  /*
+  // Sólo descarga componentes bajados desde AdaptaPro Server
+  */
+
+  oTable:=OpenTable("SELECT DIR_FILE,DIR_SIZE,DIR_CARPET,DIR_TXT FROM DPDIRAPL WHERE "+cWhere+;
+                    " AND DIR_LOCAL=0 ORDER BY DIR_CARPET",.T.,oDb)
+  oTable:GoTop()
+
+  WHILE !oTable:Eof()
+
+      oDlg:cMsg:=" Recuperando : "+ALLTRIM(oTable:DIR_CARPET)+ALLTRIM(oTable:DIR_FILE)
+      EJECUTAR("DPDIRAPLDOWN",oTable:DIR_FILE)
+      oDlg:Say( 1, 0, xPadR( oDlg:cMsg, nWidth ))
+
+      IF cFileBin$LOWER(oTable:DIR_FILE)
+         lExe:=.T.        
+      ENDIF
+
+      IF Lower(cFileExt(oTable:DIR_FILE))$"hrb"
+         lHrb:=.T.        
+      ENDIF
+
+      oTable:DbSkip()
+
+  ENDDO
+
+  oTable:End()
+
+RETURN .T.
+
+PROCEDURE RunCompila(oObj,cWhere)
+   LOCAL oProgram,cSql,cMemo,oScript,cCodigo
+
+   cSql:="SELECT PRG_CODIGO,PRG_DESCRI,PRG_TEXTO FROM DPPROGRA "+cWhere
+
+   oProgram:=OPENTABLE(cSql,.T.)
+
+   oProgram:Gotop()
+
+   HRBLOAD("DPXBASE.HRB") // Requiere Función SCRGEN
+
+   WHILE !oProgram:Eof()
+
+     FERASE(oDp:cPathDxb+ALLTRIM(oProgram:PRG_CODIGO)+".DXB")
+
+     cMemo  :=STRSQLOFF(oProgram:PRG_TEXTO)
+
+     cCodigo:=ALLTRIM(oProgram:PRG_CODIGO)
+
+     GenScr(cCodigo,cCodigo,cMemo)
+
+     oProgram:DbSkip()
+
+   ENDDO
+
+   oProgram:End()
+
+RETURN .T.
+
+
+
+// EOF
+

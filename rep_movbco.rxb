@@ -1,0 +1,84 @@
+FUNCTION MAINoGenRep
+ 17cSql,oCursor,cMsg:="",oFont1,oFont2
+ 17oReport,nLineas:=0
+  4oGenRep=NIL
+  2.F.
+ 14
+  1CursorWait()
+  1oGenRep:cWhere :=oGenRep:BuildWhere()
+  1oGenRep:cWhere :=oGenRep:cWhere+ iif(Empty(oGenRep:cWhere)," WHERE "," AND ")+ " MOB_ACT=1 "
+  1cSql :=oGenRep:BuildSql()
+  4!ChkSql(cSql,@cMsg)
+  1MensajeErr(cMsg,"Reporte <REPORTE>")
+  2.F.
+ 14
+  4!oGenRep:OutPut(.T.)
+  2.F.
+ 14
+  1oCursor:=OpenTable(cSql,.T.)
+  4oCursor:RecCount()=0
+  1MensajeErr("No fué posible Encontrar Información","Consulta Vacia Reporte <REPORTE>")
+  1oCursor:End()
+  2.F.
+ 14
+  1oCursor:GoTop()
+  1oFont1 := TFont():New("ARIAL",0,-10,,,,,,,,,,,,,,)
+  1oFont2 := TFont():New("ARIAL",0,-10,,.T.,,,,,,,,,,,,)
+  1oReport := DpRptBegin({{||"Movimientos Bancarios"},{||"Fecha: "+dtoc(Date())+" Hora: "+TIME()}},{},{{||"Página: "+str(oReport:nPage,3)+" Registros: "+alltrim(str(nLineas,5))}},{oFont1,oFont2},{},.F.,,,,.T.,,,"Movimientos Bancarios",,,UPPER("CENTER") )
+  1oGenRep:SetDevice(oReport)
+  1DpRptAddColumn({{||"# Transac."}},,{{||oCursor:MOB_NUMTRA}},8,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Fecha"}},,{{||oCursor:MOB_FECHA}},10,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Tipo"}},,{{||oCursor:MOB_TIPO}},4,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Documento"}},,{{||oCursor:MOB_DOCUME}},14,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Descripción"}},,{{||oCursor:MOB_DESCRI}},30,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Monto"}},,{{||oCursor:MOB_MONTO*oCursor:TDB_SIGNO}},16,{"9,999,999,999.99"},{||2},.T.,,UPPER("RIGHT"),.F.,.F.,)
+  1DpRptAddColumn({{||"Org"}},,{{||oCursor:MOB_ORIGEN}},3,{},,.F.,,UPPER("LEFT"),.F.,.F.,)
+  1DpRptAddColumn({{||"# Rec/Comp.Pag"}},,{{||oCursor:MOB_DOCASO}},8,{},,.F.,,,.F.,.F.,)
+  1DpRptAddGroup({||oCursor:BCO_CTABAN},{||GROUP01()},{||ENDGRP01()},{||2},.F. )
+  1DpRptEnd()
+  1oReport:bSkip:={||oCursor:DbSkip()}
+  1oReport:Activate(,{||!oCursor:Eof()},,,{||RepBitmap()},,{|oGrp|oReport:NewLine()},,,,{||ONCHANGE()},,,)
+  1oGenRep:OutPut(.F.)
+  1oFont1:End()
+  1oFont2:End()
+  2NIL
+FUNCTION ONCHANGE
+  1nLineas:=nLineas+1
+  2.T.
+FUNCTION PRINTMEMOcMemo,nCol,lData,nIni
+ 17nFor,aLines
+  4Empty(cMemo)
+  2""
+ 14
+  1nIni := If(nIni == nil,1,nIni )
+  1cMemo :=STRTRAN(cMemo,CHR(10),"")
+  1aLines:=_VECTOR(cMemo,CHR(13))
+  4lData
+  2aLines[1]
+ 14
+ 10nFor := nIni TO LEN(aLines)
+  1oReport:StartLine()
+  1oReport:Say(nCol,aLines[nFor])
+  1oReport:EndLine()
+ 11
+  1oReport:Newline()
+  2""
+FUNCTION REPBITMAP
+  1oDp:cLogoBmp := If(oDp:cLogoBmp == nil,"BITMAPS\LOGO.BMP",oDp:cLogoBmp )
+  1oReport:SayBitmap(.3,.3,oDp:cLogoBmp,.5,.5)
+  2NIL
+FUNCTION GROUP01
+ 17cExp:="",uValue:=""
+  1cExp :="Cuenta Bancaria: "
+  1uValue:=oCursor:BCO_CTABAN
+  1uValue:=cValtoChar(uValue)+" "+cValToChar(oCursor:BCO_CODIGO+" "+oCursor:BAN_NOMBRE)
+  2cExp+uValue
+FUNCTION ENDGRP01
+ 17cExp:="",uValue:="",cLines:=""
+  1cExp :="Total Cuenta Bancaria:  "
+  1uValue:=oReport:aGroups[1]:cValue
+  1uValue:=uValue
+  1uValue:=cValtoChar(uValue)
+  1cLines:=ltrim(str(oReport:aGroups[1]:nCounter))
+  1cLines:=" ("+cLines+")"
+  2cExp+uValue+cLines
